@@ -174,6 +174,50 @@
             </div>
         </div>
 
+        <!-- Seção Jogar com Números Próprios -->
+        <div class="mt-12 bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-2xl">
+            <h2 class="text-3xl font-bold text-center text-white mb-6 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                🎮 Jogue com Seus Números
+            </h2>
+            
+            <div class="max-w-4xl mx-auto">
+                <!-- Seletor de Jogo -->
+                <div class="mb-6">
+                    <label class="block text-white font-semibold mb-3">Escolha o jogo:</label>
+                    <select id="jogo-selecionado" onchange="configurarJogo()" class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white font-medium focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                        <option value="">Selecione um jogo...</option>
+                        <option value="lotomania">🎯 Lotomania (20 números: 00-99)</option>
+                        <option value="quina">🎲 Quina (5 números: 01-80)</option>
+                        <option value="megasena">💎 Mega-Sena (6 números: 01-60)</option>
+                        <option value="lotofacil">⭐ Lotofácil (15 números: 01-25)</option>
+                        <option value="duplasena">🎪 Dupla Sena (6 números: 01-50)</option>
+                        <option value="timemania">⚽ Timemania (7 números + time: 01-80)</option>
+                        <option value="diadasorte">🍀 Dia de Sorte (7 números: 01-31 + mês: 01-12)</option>
+                        <option value="supersete">🎯 Super Sete (7 dígitos: 0-9)</option>
+                        <option value="maismilionaria">💰 +Milionária (6 números: 01-50 + 2 trevos: 1-6)</option>
+                    </select>
+                </div>
+
+                <!-- Área de Configuração do Jogo -->
+                <div id="configuracao-jogo" class="hidden">
+                    <div id="instrucoes-jogo" class="bg-blue-500/20 border border-blue-400/30 rounded-lg p-4 mb-6"></div>
+                    
+                    <!-- Entrada de Números -->
+                    <div id="entrada-numeros" class="mb-6"></div>
+                    
+                    <!-- Botão de Sortear e Verificar -->
+                    <div class="text-center mb-6">
+                        <button id="btn-sortear-verificar" onclick="sortearEVerificar()" class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg text-lg">
+                            🎲 Sortear e Verificar Acertos
+                        </button>
+                    </div>
+                    
+                    <!-- Resultado da Verificação -->
+                    <div id="resultado-verificacao" class="mt-6"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="text-center mt-8">
             <p class="text-white/60 text-sm">
                 Simulador baseado nas regras oficiais das Loterias CAIXA
@@ -383,6 +427,437 @@
                 </div>
             `;
             document.getElementById('resultado-maismilionaria').innerHTML = resultado;
+        }
+
+        // SISTEMA DE JOGOS PERSONALIZADOS
+        let jogoAtual = null;
+        let numerosUsuario = [];
+        let numerosExtrasUsuario = [];
+
+        const configJogos = {
+            lotomania: {
+                nome: 'Lotomania',
+                qtdNumeros: 20,
+                minNum: 0,
+                maxNum: 99,
+                extras: [],
+                cor: 'from-yellow-500 to-orange-500'
+            },
+            quina: {
+                nome: 'Quina',
+                qtdNumeros: 5,
+                minNum: 1,
+                maxNum: 80,
+                extras: [],
+                cor: 'from-purple-500 to-pink-500'
+            },
+            megasena: {
+                nome: 'Mega-Sena',
+                qtdNumeros: 6,
+                minNum: 1,
+                maxNum: 60,
+                extras: [],
+                cor: 'from-green-500 to-emerald-500'
+            },
+            lotofacil: {
+                nome: 'Lotofácil',
+                qtdNumeros: 15,
+                minNum: 1,
+                maxNum: 25,
+                extras: [],
+                cor: 'from-blue-500 to-cyan-500'
+            },
+            duplasena: {
+                nome: 'Dupla Sena',
+                qtdNumeros: 6,
+                minNum: 1,
+                maxNum: 50,
+                extras: [],
+                cor: 'from-red-500 to-rose-500'
+            },
+            timemania: {
+                nome: 'Timemania',
+                qtdNumeros: 7,
+                minNum: 1,
+                maxNum: 80,
+                extras: [{nome: 'Time do Coração', min: 1, max: 80, qtd: 1}],
+                cor: 'from-indigo-500 to-purple-500'
+            },
+            diadasorte: {
+                nome: 'Dia de Sorte',
+                qtdNumeros: 7,
+                minNum: 1,
+                maxNum: 31,
+                extras: [{nome: 'Mês', min: 1, max: 12, qtd: 1}],
+                cor: 'from-orange-500 to-yellow-500'
+            },
+            supersete: {
+                nome: 'Super Sete',
+                qtdNumeros: 7,
+                minNum: 0,
+                maxNum: 9,
+                extras: [],
+                cor: 'from-teal-500 to-cyan-500'
+            },
+            maismilionaria: {
+                nome: '+Milionária',
+                qtdNumeros: 6,
+                minNum: 1,
+                maxNum: 50,
+                extras: [{nome: 'Trevos', min: 1, max: 6, qtd: 2}],
+                cor: 'from-pink-500 to-purple-500'
+            }
+        };
+
+        function configurarJogo() {
+            const jogoSelect = document.getElementById('jogo-selecionado');
+            const configDiv = document.getElementById('configuracao-jogo');
+            const instrucoesDiv = document.getElementById('instrucoes-jogo');
+            const entradaDiv = document.getElementById('entrada-numeros');
+            
+            if (!jogoSelect.value) {
+                configDiv.classList.add('hidden');
+                return;
+            }
+            
+            jogoAtual = configJogos[jogoSelect.value];
+            numerosUsuario = [];
+            numerosExtrasUsuario = [];
+            
+            configDiv.classList.remove('hidden');
+            
+            // Instruções
+            let instrucoes = `
+                <h3 class="text-white font-bold text-lg mb-2">${jogoAtual.nome}</h3>
+                <p class="text-white/80">Escolha ${jogoAtual.qtdNumeros} números entre ${formatarNumero(jogoAtual.minNum, 2)} e ${formatarNumero(jogoAtual.maxNum, 2)}</p>
+            `;
+            
+            if (jogoAtual.extras.length > 0) {
+                jogoAtual.extras.forEach(extra => {
+                    instrucoes += `<p class="text-white/80">+ ${extra.qtd} ${extra.nome}: ${extra.min} a ${extra.max}</p>`;
+                });
+            }
+            
+            instrucoesDiv.innerHTML = instrucoes;
+            
+            // Entrada de números
+            let entradaHTML = `
+                <div class="bg-white/10 rounded-lg p-4">
+                    <label class="block text-white font-semibold mb-3">Seus números (separados por vírgula ou espaço):</label>
+                    <input type="text" id="input-numeros" placeholder="Ex: 1, 5, 10, 15, 20, 25" 
+                           class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                    <div class="text-xs text-white/60 mt-2">Digite ${jogoAtual.qtdNumeros} números entre ${jogoAtual.minNum} e ${jogoAtual.maxNum}</div>
+                </div>
+            `;
+            
+            // Entrada para números extras
+            if (jogoAtual.extras.length > 0) {
+                jogoAtual.extras.forEach((extra, index) => {
+                    entradaHTML += `
+                        <div class="bg-white/10 rounded-lg p-4 mt-4">
+                            <label class="block text-white font-semibold mb-3">${extra.nome}:</label>
+                            <input type="text" id="input-extra-${index}" placeholder="Ex: ${extra.min}" 
+                                   class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                            <div class="text-xs text-white/60 mt-2">Digite ${extra.qtd} número(s) entre ${extra.min} e ${extra.max}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            entradaDiv.innerHTML = entradaHTML;
+        }
+
+        function validarNumeros() {
+            const inputNumeros = document.getElementById('input-numeros').value;
+            
+            if (!inputNumeros.trim()) {
+                alert('Por favor, digite seus números!');
+                return false;
+            }
+            
+            // Parse dos números principais
+            const nums = inputNumeros.split(/[,\s]+/).map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+            
+            if (nums.length !== jogoAtual.qtdNumeros) {
+                alert(`Você deve escolher exatamente ${jogoAtual.qtdNumeros} números!`);
+                return false;
+            }
+            
+            // Validar range
+            for (let num of nums) {
+                if (num < jogoAtual.minNum || num > jogoAtual.maxNum) {
+                    alert(`Todos os números devem estar entre ${jogoAtual.minNum} e ${jogoAtual.maxNum}!`);
+                    return false;
+                }
+            }
+            
+            // Verificar duplicatas
+            if (new Set(nums).size !== nums.length) {
+                alert('Não é possível escolher números repetidos!');
+                return false;
+            }
+            
+            numerosUsuario = nums.sort((a, b) => a - b);
+            
+            // Validar números extras
+            numerosExtrasUsuario = [];
+            for (let i = 0; i < jogoAtual.extras.length; i++) {
+                const inputExtra = document.getElementById(`input-extra-${i}`);
+                const extra = jogoAtual.extras[i];
+                
+                if (!inputExtra.value.trim()) {
+                    alert(`Por favor, digite o(s) ${extra.nome}!`);
+                    return false;
+                }
+                
+                const extrasNums = inputExtra.value.split(/[,\s]+/).map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+                
+                if (extrasNums.length !== extra.qtd) {
+                    alert(`Você deve escolher exatamente ${extra.qtd} ${extra.nome}!`);
+                    return false;
+                }
+                
+                for (let num of extrasNums) {
+                    if (num < extra.min || num > extra.max) {
+                        alert(`${extra.nome} deve estar entre ${extra.min} e ${extra.max}!`);
+                        return false;
+                    }
+                }
+                
+                numerosExtrasUsuario.push(...extrasNums);
+            }
+            
+            return true;
+        }
+
+        function sortearEVerificar() {
+            if (!validarNumeros()) return;
+            
+            let numerosSorteados = [];
+            let extrassorteados = [];
+            
+            // Sortear números principais
+            if (jogoAtual.nome === 'Super Sete') {
+                // Super Sete é especial - cada posição é independente
+                numerosSorteados = [];
+                for (let i = 0; i < 7; i++) {
+                    numerosSorteados.push(sortearNumero(0, 9));
+                }
+            } else {
+                numerosSorteados = sortearNumeros(jogoAtual.minNum, jogoAtual.maxNum, jogoAtual.qtdNumeros);
+            }
+            
+            // Sortear extras
+            jogoAtual.extras.forEach(extra => {
+                for (let i = 0; i < extra.qtd; i++) {
+                    extrassorteados.push(sortearNumero(extra.min, extra.max));
+                }
+            });
+            
+            // Verificar acertos
+            let acertos = 0;
+            let acertosExtras = 0;
+            let numerosAcertados = [];
+            let extrasAcertados = [];
+            
+            if (jogoAtual.nome === 'Super Sete') {
+                // Super Sete - verificar posição por posição
+                for (let i = 0; i < 7; i++) {
+                    if (numerosUsuario[i] === numerosSorteados[i]) {
+                        acertos++;
+                        numerosAcertados.push(i);
+                    }
+                }
+            } else if (jogoAtual.nome === 'Dupla Sena') {
+                // Dupla Sena - dois sorteios
+                const sorteio2 = sortearNumeros(jogoAtual.minNum, jogoAtual.maxNum, jogoAtual.qtdNumeros);
+                
+                // Verificar acertos no primeiro sorteio
+                numerosUsuario.forEach(num => {
+                    if (numerosSorteados.includes(num)) {
+                        acertos++;
+                        numerosAcertados.push(num);
+                    }
+                });
+                
+                // Verificar acertos no segundo sorteio
+                let acertos2 = 0;
+                let numerosAcertados2 = [];
+                numerosUsuario.forEach(num => {
+                    if (sorteio2.includes(num)) {
+                        acertos2++;
+                        numerosAcertados2.push(num);
+                    }
+                });
+                
+                mostrarResultadoDuplaSena(numerosSorteados, sorteio2, acertos, acertos2, numerosAcertados, numerosAcertados2);
+                return;
+            } else {
+                // Outros jogos - verificação normal
+                numerosUsuario.forEach(num => {
+                    if (numerosSorteados.includes(num)) {
+                        acertos++;
+                        numerosAcertados.push(num);
+                    }
+                });
+            }
+            
+            // Verificar extras
+            numerosExtrasUsuario.forEach(num => {
+                if (extrassorteados.includes(num)) {
+                    acertosExtras++;
+                    extrasAcertados.push(num);
+                }
+            });
+            
+            mostrarResultado(numerosSorteados, extrassorteados, acertos, acertosExtras, numerosAcertados, extrasAcertados);
+        }
+
+        function mostrarResultado(numerosSorteados, extrassorteados, acertos, acertosExtras, numerosAcertados, extrasAcertados) {
+            const resultado = document.getElementById('resultado-verificacao');
+            
+            let formatSorteados = numerosSorteados.map(n => formatarNumero(n, jogoAtual.minNum === 0 ? 2 : 2));
+            let formatUsuario = numerosUsuario.map(n => formatarNumero(n, jogoAtual.minNum === 0 ? 2 : 2));
+            
+            let html = `
+                <div class="fade-in bg-white/10 rounded-xl p-6 border border-white/20">
+                    <h3 class="text-2xl font-bold text-white mb-6 text-center">🎯 Resultado do Sorteio</h3>
+                    
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <h4 class="text-white font-semibold mb-3">Números Sorteados:</h4>
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                ${criarBolas(formatSorteados, jogoAtual.cor)}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-white font-semibold mb-3">Seus Números:</h4>
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                ${formatUsuario.map(num => {
+                                    const isAcerto = numerosAcertados.includes(parseInt(num));
+                                    const corBola = isAcerto ? 'from-green-500 to-emerald-500' : 'from-red-500 to-red-600';
+                                    return `<div class="w-10 h-10 bg-gradient-to-br ${corBola} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-white/30">${num}</div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+            `;
+            
+            // Extras (se houver)
+            if (jogoAtual.extras.length > 0 && extrassorteados.length > 0) {
+                html += `
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <h4 class="text-white font-semibold mb-3">${jogoAtual.extras[0].nome} Sorteado:</h4>
+                            <div class="flex gap-2 justify-center">
+                                ${criarBolas(extrassorteados, 'from-yellow-500 to-orange-500')}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-white font-semibold mb-3">Seu ${jogoAtual.extras[0].nome}:</h4>
+                            <div class="flex gap-2 justify-center">
+                                ${numerosExtrasUsuario.map(num => {
+                                    const isAcerto = extrasAcertados.includes(num);
+                                    const corBola = isAcerto ? 'from-green-500 to-emerald-500' : 'from-red-500 to-red-600';
+                                    return `<div class="w-10 h-10 bg-gradient-to-br ${corBola} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-white/30">${num}</div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Resultado final
+            let mensagem = '';
+            let corResultado = '';
+            
+            if (acertos === jogoAtual.qtdNumeros && (jogoAtual.extras.length === 0 || acertosExtras === numerosExtrasUsuario.length)) {
+                mensagem = '🎉 PARABÉNS! VOCÊ GANHOU O PRÊMIO MÁXIMO!';
+                corResultado = 'from-green-400 to-emerald-500';
+            } else if (acertos >= Math.floor(jogoAtual.qtdNumeros * 0.6)) {
+                mensagem = '🎊 Boa! Você teve vários acertos!';
+                corResultado = 'from-blue-400 to-cyan-500';
+            } else if (acertos > 0) {
+                mensagem = '👍 Alguns acertos! Continue tentando!';
+                corResultado = 'from-orange-400 to-yellow-500';
+            } else {
+                mensagem = '😅 Não foi dessa vez! Tente novamente!';
+                corResultado = 'from-red-400 to-rose-500';
+            }
+            
+            html += `
+                    <div class="text-center bg-gradient-to-r ${corResultado} rounded-xl p-6 text-white">
+                        <div class="text-3xl font-bold mb-2">${acertos} acerto(s)</div>
+                        ${jogoAtual.extras.length > 0 ? `<div class="text-lg mb-2">+ ${acertosExtras} ${jogoAtual.extras[0].nome}</div>` : ''}
+                        <div class="text-xl font-semibold">${mensagem}</div>
+                    </div>
+                </div>
+            `;
+            
+            resultado.innerHTML = html;
+        }
+
+        function mostrarResultadoDuplaSena(sorteio1, sorteio2, acertos1, acertos2, acertados1, acertados2) {
+            const resultado = document.getElementById('resultado-verificacao');
+            
+            let formatSorteados1 = sorteio1.map(n => formatarNumero(n, 2));
+            let formatSorteados2 = sorteio2.map(n => formatarNumero(n, 2));
+            let formatUsuario = numerosUsuario.map(n => formatarNumero(n, 2));
+            
+            let html = `
+                <div class="fade-in bg-white/10 rounded-xl p-6 border border-white/20">
+                    <h3 class="text-2xl font-bold text-white mb-6 text-center">🎯 Resultado Dupla Sena</h3>
+                    
+                    <div class="grid gap-6 mb-6">
+                        <div>
+                            <h4 class="text-white font-semibold mb-3">1º Sorteio:</h4>
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                ${criarBolas(formatSorteados1, 'from-red-500 to-rose-500')}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-white font-semibold mb-3">2º Sorteio:</h4>
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                ${criarBolas(formatSorteados2, 'from-red-600 to-rose-600')}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-white font-semibold mb-3">Seus Números:</h4>
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                ${formatUsuario.map(num => {
+                                    const acerto1 = acertados1.includes(parseInt(num));
+                                    const acerto2 = acertados2.includes(parseInt(num));
+                                    let corBola = 'from-gray-500 to-gray-600';
+                                    if (acerto1 && acerto2) corBola = 'from-yellow-500 to-orange-500';
+                                    else if (acerto1 || acerto2) corBola = 'from-green-500 to-emerald-500';
+                                    else corBola = 'from-red-500 to-red-600';
+                                    return `<div class="w-10 h-10 bg-gradient-to-br ${corBola} rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-white/30">${num}</div>`;
+                                }).join('')}
+                            </div>
+                            <div class="text-xs text-white/60 text-center mt-2">
+                                🟡 Acerto nos 2 sorteios | 🟢 Acerto em 1 sorteio | 🔴 Nenhum acerto
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="text-center bg-gradient-to-r from-red-400 to-rose-500 rounded-xl p-4 text-white">
+                            <div class="text-2xl font-bold">${acertos1} acerto(s)</div>
+                            <div class="text-sm">1º Sorteio</div>
+                        </div>
+                        <div class="text-center bg-gradient-to-r from-red-500 to-rose-600 rounded-xl p-4 text-white">
+                            <div class="text-2xl font-bold">${acertos2} acerto(s)</div>
+                            <div class="text-sm">2º Sorteio</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultado.innerHTML = html;
         }
     </script>
 </body>
